@@ -11,7 +11,7 @@
     <url>http://maven.apache.org</url>
     <properties>
         <maven.shade.plugin.version>3.2.0</maven.shade.plugin.version>
-        <solr.version>7.4.0</solr.version>
+        <solr.version>8.5.2</solr.version>
     </properties>
 
     <dependencies>

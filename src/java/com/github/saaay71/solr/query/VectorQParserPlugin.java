@@ -33,7 +33,6 @@ public class VectorQParserPlugin extends QParserPlugin {
 			public Query parse() throws SyntaxError {
 				String field = localParams.get(QueryParsing.F);
 				String vector = localParams.get("vector");
-				boolean cosine = localParams.getBool("cosine", true);
 
 				if (field == null) {
 					throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
@@ -45,19 +44,26 @@ public class VectorQParserPlugin extends QParserPlugin {
 
 				FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
 				String subQueryStr = localParams.get(QueryParsing.V);
-				VectorQuery q = null;
 
 				String[] vectorArray = vector.split(",");
 
 				if(ft != null && !localParams.getBool("lsh", false)) {
-					q = new VectorQuery(subQuery(subQueryStr, null).getQuery());
+					VectorQuery q = new VectorQuery(subQuery(subQueryStr, null).getQuery());
 					q.setQueryString(localParams.toLocalParamsString());
 					query = q;
+
+					List<Double> vectorList = new ArrayList<>();
+					for(int i=0;i<vectorArray.length;i++){
+						double v = Double.parseDouble(vectorArray[i]);
+						vectorList.add(v);
+					}
+
+					return new VectorScoreQuery(query, vectorList, req.getSchema().getField(field));
 				} else {
 					final int topNDocs = localParams.getInt(ReRankQParserPlugin.RERANK_DOCS, ReRankQParserPlugin.RERANK_DOCS_DEFAULT);
 					String lshQuery = computeLSHQueryString(vector, vectorArray);
 					if(subQueryStr != null && !subQueryStr.equals("")) {
-						lshQuery = subQuery(subQueryStr, null).getQuery() + " AND " + lshQuery;
+						lshQuery = "+(" + subQuery(subQueryStr, null).getQuery() + ")^=0.00001 OR " + lshQuery;
 					}
 					Query luceneQuery = req.getCore().getQueryPlugin("lucene")
 							.createParser(lshQuery, localParams, params, req).parse();
@@ -74,14 +80,6 @@ public class VectorQParserPlugin extends QParserPlugin {
 					return ((AbstractReRankQuery) req.getCore().getQueryPlugin(ReRankQParserPlugin.NAME)
 							.createParser(lshQuery, computedLocalParams, params, req).getQuery()).wrap(luceneQuery);
 				}
-
-				List<Double> vectorList = new ArrayList<>();
-				for(int i=0;i<vectorArray.length;i++){
-					double v = Double.parseDouble(vectorArray[i]);
-					vectorList.add(v);
-				}
-
-				return new VectorScoreQuery(query, vectorList, req.getSchema().getField(field), cosine);
 			}
 
 			private String computeLSHQueryString(String vector, String[] vectorArray) {

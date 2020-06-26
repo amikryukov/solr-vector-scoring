@@ -5,7 +5,7 @@ This plugin is the same as [Vector Scoring Plugin for Elasticsearch](https://git
 
 ## Plugin installation
 
-The plugin was developed and tested on Solr `7.4.0`.
+The plugin was developed and tested on Solr **`8.5.2`** and `7.4.0`.
 
 1. Build the jar using maven
 ```

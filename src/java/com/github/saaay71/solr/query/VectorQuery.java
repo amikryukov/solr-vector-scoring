@@ -7,23 +7,24 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
 public class VectorQuery extends Query {
 	String queryStr = "";
 	Query q;
-	
+
 	public VectorQuery(Query subQuery) {
 		this.q = subQuery;
 	}
-	
+
 	public void setQueryString(String queryString){
 		this.queryStr = queryString;
 	}
 
 	@Override
-	public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+	public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 		Weight w;
 		if(q == null){
 			w =  new ConstantScoreWeight(this, boost) {
@@ -34,11 +35,11 @@ public class VectorQuery extends Query {
 
 				@Override
 				public Scorer scorer(LeafReaderContext context) throws IOException {
-					return new ConstantScoreScorer(this, score(), DocIdSetIterator.all(context.reader().maxDoc()));
+					return new ConstantScoreScorer(this, score(), scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
 				}
 			};
 		}else{
-			w = searcher.createWeight(q, needsScores, boost);
+			w = searcher.createWeight(q, scoreMode, boost);
 		}
 		return w;
 	}
